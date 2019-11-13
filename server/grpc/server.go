@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
-
+	"reflect"
 	"github.com/go-chassis/go-chassis/core/common"
 	"github.com/go-chassis/go-chassis/core/handler"
 	"github.com/go-chassis/go-chassis/core/invocation"
@@ -82,13 +82,38 @@ func New(opts server.Options) server.ProtocolServer {
 		s:    grpc.NewServer(grpc.UnaryInterceptor(interceptor)),
 	}
 }
+func Apply(f interface{}, args []interface{}) []reflect.Value {
+	fun := reflect.ValueOf(f)
+	in := make([]reflect.Value, len(args))
+	for k, param := range args {
+		in[k] = reflect.ValueOf(param)
+	}
+	r := fun.Call(in)
+	return r
 
+}
+/*
+	user := service.Rpc_order{}
+	chassis.RegisterSchema("grpc", &user,
+		server.RegisterOption(func(o *server.RegisterOptions) {
+			o.RPCSvcDesc = pb.RegisterOrderServer
+
+		}),
+	)
+*/
 //Register register grpc services
 func (s *Server) Register(schema interface{}, options ...server.RegisterOption) (string, error) {
 	opts := server.RegisterOptions{}
 	for _, o := range options {
 		o(&opts)
 	}
+	
+	if opts.RPCSvcDesc != nil {
+		fmt.Println(opts)
+		Apply(opts.RPCSvcDesc, []interface{}{s.s, schema})
+		return "", nil
+	}
+	
 	if opts.RPCSvcDesc == nil {
 		return "", ErrGRPCSvcDescMissing
 	}
