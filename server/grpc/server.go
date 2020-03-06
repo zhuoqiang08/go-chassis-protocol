@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+
 	"github.com/go-chassis/go-chassis/core/common"
 	"github.com/go-chassis/go-chassis/core/handler"
 	"github.com/go-chassis/go-chassis/core/invocation"
@@ -77,11 +78,13 @@ func New(opts server.Options) server.ProtocolServer {
 		})
 		return r.Result, r.Err
 	}
+
 	return &Server{
 		opts: opts,
-		s:    grpc.NewServer(grpc.UnaryInterceptor(interceptor)),
+		s:    grpc.NewServer(grpc.MaxMsgSize(100*1024*1024), grpc.UnaryInterceptor(interceptor)),
 	}
 }
+
 func Apply(f interface{}, args []interface{}) []reflect.Value {
 	fun := reflect.ValueOf(f)
 	in := make([]reflect.Value, len(args))
@@ -92,31 +95,24 @@ func Apply(f interface{}, args []interface{}) []reflect.Value {
 	return r
 
 }
-/*
-	user := service.Rpc_order{}
-	chassis.RegisterSchema("grpc", &user,
-		server.RegisterOption(func(o *server.RegisterOptions) {
-			o.RPCSvcDesc = pb.RegisterOrderServer
 
-		}),
-	)
-*/
 //Register register grpc services
 func (s *Server) Register(schema interface{}, options ...server.RegisterOption) (string, error) {
 	opts := server.RegisterOptions{}
+	fmt.Println("===========")
 	for _, o := range options {
 		o(&opts)
 	}
-	
 	if opts.RPCSvcDesc != nil {
 		fmt.Println(opts)
 		Apply(opts.RPCSvcDesc, []interface{}{s.s, schema})
 		return "", nil
 	}
-	
+
 	if opts.RPCSvcDesc == nil {
 		return "", ErrGRPCSvcDescMissing
 	}
+
 	desc, ok := opts.RPCSvcDesc.(*grpc.ServiceDesc)
 	if !ok {
 		return "", ErrGRPCSvcType
