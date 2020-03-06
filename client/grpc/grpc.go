@@ -47,12 +47,21 @@ func newClientConn(opts client.Options) (*grpc.ClientConn, error) {
 	var err error
 	ctx, cancel := context.WithTimeout(context.Background(), opts.Timeout)
 	defer cancel()
+	dial_option := []grpc.DialOption{
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(100*1024*1024), //math.MaxInt32),
+			grpc.MaxCallSendMsgSize(100*1024*1024), //math.MaxInt32),
+		),
+	}
 	if opts.TLSConfig == nil {
-		conn, err = grpc.DialContext(ctx, opts.Endpoint, grpc.WithInsecure())
+		dial_option = append(dial_option, grpc.WithInsecure())
+		conn, err = grpc.DialContext(ctx, opts.Endpoint, dial_option...)
+		//conn, err = grpc.DialContext(ctx, opts.Endpoint, grpc.WithInsecure())
 	} else {
 		conn, err = grpc.DialContext(ctx, opts.Endpoint,
 			grpc.WithTransportCredentials(credentials.NewTLS(opts.TLSConfig)))
 	}
+
 	return conn, err
 }
 
