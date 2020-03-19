@@ -76,7 +76,11 @@ func New(opts server.Options) server.ProtocolServer {
 			r = ir
 			return ir.Err
 		})
-		return r.Result, r.Err
+		if r != nil {
+			return r.Result, r.Err
+		}
+		return resp, err
+
 	}
 
 	return &Server{
@@ -99,7 +103,6 @@ func Apply(f interface{}, args []interface{}) []reflect.Value {
 //Register register grpc services
 func (s *Server) Register(schema interface{}, options ...server.RegisterOption) (string, error) {
 	opts := server.RegisterOptions{}
-	fmt.Println("===========")
 	for _, o := range options {
 		o(&opts)
 	}
